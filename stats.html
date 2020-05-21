@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/css/bootstrap.min.css" integrity="sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <title>Connect Stats</title>
+  </head>
+  <body>
+      
+      <div id="app" class="container">
+            <!-- Over All Server Stats -->
+            <div class="row "> 
+                <div class="col-4 card">
+                        <h2 class="card-title">Total Meetings </h2>
+                        <p class="card-text" id="tMeetings">{{ Meetings }}</p>
+                </div>
+                <div class="col-4 card">
+                        <h2 class="card-title">Total Cameras </h2>
+                        <p class="card-text" id="tMeetings">{{ Webcams }}</p>
+                </div>
+                <div class="col-4 card">
+                    <h2  class="card-title">Total Participants</h2>
+                    <p  class="card-text" id="tParticipants">{{ Participants }}</p>
+                </div>
+            </div>
+            <!-- Meetings -->
+            <div class="row border border-secondary mt-md-5" v-for="Meeting in MeetingData" >  
+                <!-- Meeting Stats -->
+                <div class="col border-bottom border-secondary">
+                    <div class="row">
+                        <div class="col card">
+                            <span class="card-text">Meeting Name : {{Meeting["meetingName"]}}</span>
+                            <span class="card-text">Meeting ID : {{Meeting["meetingID"]}}</span>
+                        </div>
+                        <div class="col card">
+                            <p>Participants : {{Meeting["attendeescount"]}}</p> 
+                        </div>
+                        <div class="col card">
+                            <p>Active Cams : {{Meeting["cams"]}}</p> 
+                        </div>
+                    </div>
+                </div> 
+                <!-- Meeting Attendees -->
+                <div class="col-12" >
+                    <table class="table table-striped">
+                        <thead>
+                        <tr>
+                            <td>User ID</td>
+                            <td>Name</td>
+                            <td>Role</td>
+                            <td>Presenter</td>
+                            <td>Listen only</td>
+                            <td>Joind Voice</td>
+                            <td>Web Cam</td>
+                            <td>Client Type</td>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr v-for='person in Meeting["attendee"]'>
+                            <td>{{person[0]}}</td>
+                            <td>{{person[1]}}</td>
+                            <td>{{person[2]}}</td>
+                            <td>{{person[3]}}</td>
+                            <td>{{person[4]}}</td>
+                            <td>{{person[5]}}</td>
+                            <td>{{person[6]}}</td>
+                            <td>{{person[7]}}</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+                              
+      </div>
+    
+    <script>
+        var xl ;
+        var MA;
+        var table ;
+        var app = new Vue({
+            el: '#app',
+            data: {
+                DataXML: "xmldata" ,
+                Meetings: 0,
+                Participants: 0,
+                Webcams: 0,
+                MeetingData: Array()
+            },
+            methods: {
+                getdata(data="newdata") {
+                    //alert("Getting data");
+                    app.DataXML = data;
+                    axios.get('https://specon1.eduserv.com.au/pi/api/getMeetings?checksum=e11bd765e446c908c7df8c5eedf179151a49c70e').then(response => {
+                        app.DataXML = new DOMParser().parseFromString(response.data,"text/xml");
+                        xl = meetings = app.DataXML.getElementsByTagName("meeting");
+                        tattendee = app.DataXML.getElementsByTagName("attendee")
+                        webCams = MA = app.DataXML.getElementsByTagName("hasVideo");
+                        app.Webcams = 0;
+                        for (i=0;i < webCams.length;i++ ){
+                            if (webCams[i].innerHTML == "true"){
+                                app.Webcams++;
+                            }
+                        }
+                        app.Meetings = meetings.length;
+                        app.Participants = tattendee.length;
+                        //app.DataXML = response.data;
+                        table = Array();
+                        name = "";
+                        for (i=0;i<meetings.length;i++){
+                            var Mattendee = meetings.item(i).getElementsByTagName("attendee");
+                            var Mattendeedata = Array();
+                            var cams = 0;
+                            for (x=0; x < Mattendee.length;x++){
+                               Mattendeedata.push([
+                                   Mattendee[x].children[0].innerHTML,
+                                   Mattendee[x].children[1].innerHTML,
+                                   Mattendee[x].children[2].innerHTML,
+                                   Mattendee[x].children[3].innerHTML,
+                                   Mattendee[x].children[4].innerHTML,
+                                   Mattendee[x].children[5].innerHTML,
+                                   Mattendee[x].children[6].innerHTML,
+                                   Mattendee[x].children[7].innerHTML
+                                ]);
+                                if (Mattendee[x].children[6].innerHTML == "true"){
+                                    cams++;
+                                }
+                                   
+                            }
+                            var row = { 
+                                meetingName : meetings.item(i).getElementsByTagName("meetingName").item(0).textContent, 
+                                meetingID : meetings.item(i).getElementsByTagName("meetingID").item(0).textContent,
+                                attendeescount : Mattendee.length,
+                                attendee: Mattendeedata,
+                                cams: cams
+                            };
+                            
+                            table.push(row);
+                        }
+                        app.MeetingData = table;
+                    });
+                }
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', function() {
+              //alert("ready");
+              app.getdata("function data");
+              window.setInterval(function(){app.getdata("function data");}, 20000);
+        });
+    </script>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js" integrity="sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.0/js/bootstrap.min.js" integrity="sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI" crossorigin="anonymous"></script>
+  </body>
+</html>
