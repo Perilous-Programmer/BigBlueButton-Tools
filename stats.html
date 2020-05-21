@@ -96,7 +96,7 @@
                 getdata(data="newdata") {
                     //alert("Getting data");
                     app.DataXML = data;
-                    axios.get('https://specon1.eduserv.com.au/pi/api/getMeetings?checksum=e11bd765e446c908c7df8c5eedf179151a49c70e').then(response => {
+                    axios.get('BBBAPICALL').then(response => {
                         app.DataXML = new DOMParser().parseFromString(response.data,"text/xml");
                         xl = meetings = app.DataXML.getElementsByTagName("meeting");
                         tattendee = app.DataXML.getElementsByTagName("attendee")
