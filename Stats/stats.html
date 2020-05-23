@@ -66,7 +66,27 @@
                     <div class="col">
                         <div class="card">
                             <div class="card-header text-center">Meeting Origin</div>
-                            <div class="card-body">{{Meeting["origin"]}}</div>
+                            <div class="card-body">{{Meeting["bbbOrigin"]}}</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card">
+                            <div class="card-header text-center">Meeting Context</div>
+                            <div class="card-body">{{Meeting["bbbContext"]}}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row mt-md-1">
+                    <div class="col">
+                        <div class="card">
+                            <div class="card-header text-center">Create Date</div>
+                            <div class="card-body">{{Meeting["createDate"]}}</div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card">
+                            <div class="card-header text-center">Origin Server</div>
+                            <div class="card-body">{{Meeting["bbbOriginServerName"]}}</div>
                         </div>
                     </div>
                 </div>
@@ -121,7 +141,7 @@
                 getdata(data = "newdata") {
                     //alert("Getting data");
                     app.DataXML = data;
-                    axios.get('https://connect.eduserv.com.au/test/stats/keepsafe.php').then(response => {
+                    axios.get('APIBBBCALL').then(response => {
                         app.DataXML = new DOMParser().parseFromString(response.data, "text/xml");
                         xl = meetings = app.DataXML.getElementsByTagName("meeting");
                         tattendee = app.DataXML.getElementsByTagName("attendee")
@@ -155,7 +175,16 @@
                                 if (Mattendee[x].children[6].innerHTML == "true") {
                                     cams++;
                                 }
-
+                            }
+                            try{
+                            	var context = meetings.item(i).getElementsByTagName("bbb-context").item(0).textContent;
+                                var origin = meetings.item(i).getElementsByTagName("bbb-origin").item(0).textContent;
+                                var originServer = meetings.item(i).getElementsByTagName("bbb-origin-server-name").item(0).textContent;
+                            }
+                        	catch(err){
+                            	var context = "--";
+                                var origin = "GreenLight";
+                                var originServer = "Not Available";
                             }
                             var row = {
                                 meetingName: meetings.item(i).getElementsByTagName("meetingName").item(0).textContent,
@@ -163,7 +192,10 @@
                                 attendeescount: meetings.item(i).getElementsByTagName("participantCount").item(0).textContent,
                                 attendee: Mattendeedata,
                                 cams: cams,
-                                origin: "api"
+                                bbbOrigin : origin,
+                            	bbbContext : context,
+                            	createDate : meetings.item(i).getElementsByTagName("createDate").item(0).textContent,
+                            	bbbOriginServerName : originServer
                             };
 
                             table.push(row);
